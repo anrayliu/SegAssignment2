@@ -62,8 +62,6 @@ public class ChatClient extends AbstractClient
   public void handleMessageFromServer(Object msg) 
   {
     clientUI.display(msg.toString());
-    
-    
   }
 
   /**
@@ -90,6 +88,12 @@ public class ChatClient extends AbstractClient
 
   }
 
+  /**
+   * Method used to handle special commands prefixed with '#'
+   *
+   * @param command The command as a string, e.g "#quit"
+   */
+
   private void handleCommand(String command) {
     if (command.equals("#quit")) {
       if (isConnected()) {
@@ -98,12 +102,17 @@ public class ChatClient extends AbstractClient
         System.exit(0);
       }
     } else if (command.equals("#logoff")) {
-      try {
-        closeConnection();
-        clientUI.display("Logged off.");
-      } catch (IOException e) {
-        clientUI.display("Something went wrong when trying to log off.");
+      if (isConnected()) {
+        try {
+          closeConnection();
+          clientUI.display("Logged off.");
+        } catch (IOException e) {
+          clientUI.display("Something went wrong when trying to log off.");
+        }
+      } else {
+        clientUI.display("Already logged off.");
       }
+
     } else if (command.equals("#login")) {
       if (isConnected()) {
         clientUI.display("Already logged in.");
@@ -154,17 +163,30 @@ public class ChatClient extends AbstractClient
     System.exit(0);
   }
 
+  /**
+   * Overrides hook method called each time an exception is thrown by the client's
+   * thread that is waiting for messages from the server.
+   *
+   * @param exception
+   *            the exception raised.
+   */
   @Override
   public void connectionException(Exception exception) {
     clientUI.display("The server has shut down.");
     System.exit(0);
   }
 
+  /**
+   * Overrides hook method called after the connection has been closed.
+   */
   @Override
   protected void connectionClosed() {
     clientUI.display("Connection closed.");
   }
 
+  /**
+   * Overrides hook method called after a connection has been established.
+   */
   @Override
   protected void connectionEstablished() {
     try {

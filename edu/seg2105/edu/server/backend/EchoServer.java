@@ -104,22 +104,45 @@ public class EchoServer extends AbstractServer
       ("Server has stopped listening for connections.");
   }
 
+  /**
+   * Overrides hook method called each time an exception is thrown in a
+   * ConnectionToClient thread.
+   *
+   * @param client the client that raised the exception.
+   * @param Throwable the exception thrown.
+   */
   @Override
   protected synchronized void clientException(ConnectionToClient client, Throwable exception) {
-    System.out.println("Client disconnected.");
+    System.out.println(client.getInfo("loginID") + " has disconnected.");
   }
 
+  /**
+   * Overrides hook method called each time a client disconnects.
+   *
+   * @param client the connection with the client.
+   */
   @Override
   protected synchronized void clientDisconnected(ConnectionToClient client) {
-    System.out.println("Client disconnected.");
+    System.out.println(client.getInfo("loginID") + " has disconnected.");
   }
 
+  /**
+   * Overrides hook method called each time a new client connection is
+   * accepted.
+   *
+   * @param client the connection connected to the client.
+   */
   @Override
   protected void clientConnected(ConnectionToClient client) {
     System.out.println("A new client has connected to the server.");
     client.setInfo("haveID", false);
   }
 
+  /**
+   * This method handles all data coming from the UI
+   *
+   * @param message The message from the UI.
+   */
   public void handleMessageFromServerUI(String message) {
     if (message.startsWith("#")) {
       handleCommand(message);
@@ -129,6 +152,11 @@ public class EchoServer extends AbstractServer
     }
   }
 
+  /**
+   * Method used to handle special commands prefixed with '#'
+   *
+   * @param command The command as a string, e.g "#quit"
+   */
   private void handleCommand(String command) {
     if (command.equals("#quit")) {
       quit();
@@ -160,6 +188,9 @@ public class EchoServer extends AbstractServer
     }
   }
 
+  /**
+   * Cleanly terminated the server.
+   */
   public void quit()
   {
     try

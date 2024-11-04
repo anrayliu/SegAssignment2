@@ -4,7 +4,11 @@ package edu.seg2105.edu.server.backend;
 // license found at www.lloseng.com 
 
 
+import edu.seg2105.client.common.ChatIF;
 import ocsf.server.*;
+
+import javax.management.DescriptorKey;
+import java.io.IOException;
 
 /**
  * This class overrides some of the methods in the abstract 
@@ -23,7 +27,9 @@ public class EchoServer extends AbstractServer
    * The default port to listen on.
    */
   final public static int DEFAULT_PORT = 5555;
-  
+
+  ChatIF serverUI;
+
   //Constructors ****************************************************
   
   /**
@@ -31,9 +37,18 @@ public class EchoServer extends AbstractServer
    *
    * @param port The port number to connect on.
    */
-  public EchoServer(int port) 
+  public EchoServer(int port, ChatIF ui)
   {
     super(port);
+    serverUI = ui;
+    try
+    {
+      listen(); //Start listening for connections
+    }
+    catch (Exception ex)
+    {
+      System.out.println("ERROR - Could not listen for clients!");
+    }
   }
 
   
@@ -48,8 +63,25 @@ public class EchoServer extends AbstractServer
   public void handleMessageFromClient
     (Object msg, ConnectionToClient client)
   {
-    System.out.println("Message received: " + msg + " from " + client);
-    this.sendToAllClients(msg);
+
+    System.out.println("Message received: " + msg + " from " + client.getInfo("loginID"));
+
+    if (msg.toString().startsWith("#login")) {
+      if ((boolean) client.getInfo("haveID")) {
+        try {
+          client.sendToClient("#login cannot be called again.");
+        } catch (IOException e) {}
+        try {
+          client.close();
+        } catch (IOException e) {}
+      } else {
+        client.setInfo("loginID", msg.toString().substring(7));
+        client.setInfo("haveID", true);
+        System.out.println(client.getInfo("loginID") + " has logged on.");
+      }
+    } else {
+      this.sendToAllClients(client.getInfo("loginID") + ": " + msg);
+    }
   }
     
   /**
@@ -78,42 +110,65 @@ public class EchoServer extends AbstractServer
   }
 
   @Override
-  protected void clientConnected(ConnectionToClient client) {
-    System.out.println("Client " + client + " connected.");
+  protected synchronized void clientDisconnected(ConnectionToClient client) {
+    System.out.println("Client disconnected.");
   }
 
-  //Class methods ***************************************************
-  
-  /**
-   * This method is responsible for the creation of 
-   * the server instance (there is no UI in this phase).
-   *
-   * @param args[0] The port number to listen on.  Defaults to 5555 
-   *          if no argument is entered.
-   */
-  public static void main(String[] args) 
-  {
-    int port = 0; //Port to listen on
+  @Override
+  protected void clientConnected(ConnectionToClient client) {
+    System.out.println("A new client has connected to the server.");
+    client.setInfo("haveID", false);
+  }
 
+  public void handleMessageFromServerUI(String message) {
+    if (message.startsWith("#")) {
+      handleCommand(message);
+    } else {
+      sendToAllClients("SERVER MSG> " + message);
+      serverUI.display("SERVER MSG> " + message);
+    }
+  }
+
+  private void handleCommand(String command) {
+    if (command.equals("#quit")) {
+      quit();
+    } else if (command.equals("#stop")) {
+      stopListening();
+    } else if (command.equals("#close")) {
+      try {
+        close();
+      } catch (IOException e) {
+      }
+    } else if (command.startsWith("#setport")) {
+      try {
+        int port = Integer.parseInt(command.substring(9));
+        setPort(port);
+      } catch (Exception e) {
+        serverUI.display("Please provide the format #setport <port>");
+      }
+    } else if (command.equals("#start")) {
+      if (!isListening()) {
+        try {
+          listen();
+
+        } catch (IOException e) {}
+      } else {
+        serverUI.display("Server already listening.");
+      }
+    } else if (command.equals("#getport")) {
+      serverUI.display(getPort() + "");
+    }
+  }
+
+  public void quit()
+  {
     try
     {
-      port = Integer.parseInt(args[0]); //Get port from command line
+      close();
     }
-    catch(Throwable t)
-    {
-      port = DEFAULT_PORT; //Set port to 5555
-    }
-	
-    EchoServer sv = new EchoServer(port);
-    
-    try 
-    {
-      sv.listen(); //Start listening for connections
-    } 
-    catch (Exception ex) 
-    {
-      System.out.println("ERROR - Could not listen for clients!");
-    }
+    catch(IOException e) {}
+    System.exit(0);
   }
+
 }
 //End of EchoServer class

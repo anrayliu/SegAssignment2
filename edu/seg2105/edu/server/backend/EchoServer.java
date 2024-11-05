@@ -168,23 +168,28 @@ public class EchoServer extends AbstractServer
       } catch (IOException e) {
       }
     } else if (command.startsWith("#setport")) {
-      try {
-        int port = Integer.parseInt(command.substring(9));
-        setPort(port);
-      } catch (Exception e) {
-        serverUI.display("Please provide the format #setport <port>");
+      if (!isListening() && getNumberOfClients() == 0) {
+        try {
+          int port = Integer.parseInt(command.substring(9));
+          setPort(port);
+        } catch (Exception e) {
+          serverUI.display("Please provide the format #setport <port>");
+        }
+      } else {
+        serverUI.display("Only allowed when server is closed.");
       }
     } else if (command.equals("#start")) {
       if (!isListening()) {
         try {
           listen();
-
         } catch (IOException e) {}
       } else {
         serverUI.display("Server already listening.");
       }
     } else if (command.equals("#getport")) {
       serverUI.display(getPort() + "");
+    } else {
+      serverUI.display("Unknown command.");
     }
   }
 

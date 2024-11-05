@@ -129,21 +129,31 @@ public class ChatClient extends AbstractClient
     } else if (command.equals("#getport")) {
         clientUI.display(getPort() + "");
     } else if (command.startsWith("#sethost")) {
-        try {
-          String host = command.substring(9);
-          if (host.isEmpty()) {
-            throw new Exception();
+        if (!isConnected()) {
+
+          try {
+            String host = command.substring(9);
+            if (host.isEmpty()) {
+              throw new Exception();
+            }
+            setHost(host);
+          } catch (Exception e) {
+            clientUI.display("Please provide the format #sethost <host>");
           }
-          setHost(host);
-        } catch (Exception e) {
-          clientUI.display("Please provide the format #sethost <host>");
+        } else {
+          clientUI.display("Can only set host when logged off.");
         }
+
     } else if (command.startsWith("#setport")) {
-      try {
-        int port = Integer.parseInt(command.substring(9));
-        setPort(port);
-      } catch (Exception e) {
-        clientUI.display("Please provide the format #setport <port>");
+      if (!isConnected()) {
+        try {
+          int port = Integer.parseInt(command.substring(9));
+          setPort(port);
+        } catch (Exception e) {
+          clientUI.display("Please provide the format #setport <port>");
+        }
+      } else {
+        clientUI.display("Can only set port when logged off.");
       }
     } else {
       clientUI.display("Unrecognized command.");
